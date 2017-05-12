@@ -3,7 +3,8 @@ library(shiny)
 library(ggplot2)
 library(xts)
 
-city_data <- readRDS('data.rds')
+city_data <- readRDS('/home/michelle/Documents/bos_311/data.rds')
+city_data$
 
 neighborhood_list <- list('South Boston / South Boston Waterfront', 'Allston / Brighton', 'Dorchester',
                           'Downtown / Financial District', 'Back Bay', 'Greater Mattapan', 'Charlestown', 'Roxbury',
@@ -40,6 +41,7 @@ server <- function(input, output, session) {
     
     #Reactive Code that will change UI based on user input.
     
+    
     neighborhood_dat <- reactive({
         data <- city_data
         data <- selectNeighborhood(data, input$neighborhood)
@@ -60,7 +62,7 @@ server <- function(input, output, session) {
     
     
     ts_data <- reactive({
-       
+        data$open
         data <- selectDept(data, input$select_subject)
         data$open_dt <- as.POSIXlt(data$open_dt)
         means <- neighborhood_plot(data, input$neighborhood, mean)
@@ -69,6 +71,8 @@ server <- function(input, output, session) {
         se <- fortify.zoo(se)
         means$se <- se$se
         means <- means[1:(nrow(means)-1),]
+        means$Index <- as.Date(means$Index, format = "%Y-%m-%d")
+        means <- means[means$Index >= input$date_select_min & means$Index <= input$date_select_max,]
         return(means)
     })
     
@@ -78,20 +82,22 @@ server <- function(input, output, session) {
         count <- neighborhood_plot(data, input$neighborhood, nrow)
         count <- fortify.zoo(count)
         count <- count[1:(nrow(count)-1),]
+        count$Index <- as.Date(count$Index, format = "%Y-%m-%d")
+        count <- count[count$Index >= input$date_select_min & count$Index <= input$date_select_max,]
         return(count)
     })
 
     output$ts_plot <- renderPlot({
         plot_dat <- ts_data()
-        plot <-ggplot(data = plot_dat, aes(x = Index)) + geom_line(aes(y = means), size = 1) + geom_ribbon(aes(ymin = means, ymax = (means + se) , alpha = .02), fill = "lightskyblue1") + scale_alpha(guide = 'none') + labs(x = 'Date' , y = "Mean Hours to Close 311 Request" ) + theme(axis.text.x = element_text(size = 16, angle = 45), axis.text.y = element_text(size = 16), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 20))
-        plot
+        plot <-ggplot(data = plot_dat, aes(x = Index)) + geom_line(aes(y = means), size = 1) + geom_ribbon(aes(ymin = means, ymax = (means+se) , alpha = .02), fill = "lightskyblue1") + scale_alpha(guide = 'none') + labs(x = 'Date' , y = "Mean Hours to Close 311 Request" ) + theme(axis.text.x = element_text(size = 14, angle = 90), axis.text.y = element_text(size = 16), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 19)) + scale_x_date(date_breaks = "4 week", date_labels = "%m-%d-%Y")
+        return(plot)
     })
     
     output$count_plot <- renderPlot({
         plot_dat <- count_data()
-        plot_dat$Index <- as.POSIXlt(plot_dat$Index)
-        plot <-ggplot(data = plot_dat, aes(x = Index)) + geom_line(aes(y = count), size = 1) + labs(x = 'Date' , y = "Mean Count of 311 Requests Closed" ) + theme(axis.text.x = element_text(size = 16, angle = 45), axis.text.y = element_text(size = 16), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 20))
-        plot
+        plot <-ggplot(data = plot_dat, aes(x = Index)) + geom_line(aes(y = count), size = 1) + labs(x = 'Date' , y = "Mean Count of 311 Requests Closed" ) + theme(axis.text.x = element_text(size = 14, angle = 90), axis.text.y = element_text(size = 16), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 19)) + scale_x_date(date_breaks = "4 week", date_labels = "%m-%d-%Y")
+        return(plot)
+        
         
     })
     
@@ -103,7 +109,14 @@ server <- function(input, output, session) {
         # addDist: add column with distance, in pixels
         nearPoints(plot_dat, input$plot_click, threshold = 15, maxpoints = 1)
     })
-
+    
+    output$table <- renderTable({
+        data <- ts_data()
+        data$Index <- as.Date(data$Index, format = "%Y-%m-%d")
+        data$Index <- as.character(data$Index)
+        return(data)
+    })
+    
   
 }
 
@@ -120,16 +133,33 @@ ui <- fluidPage(
             
             selectInput("select_subject", 
                         "Department: ",
-                        "")
+                        ""),
+            
+            sliderInput("date_select_min",
+                        "Minimum Date:",
+                        min = as.Date("2011-04-20","%Y-%m-%d"),
+                        max = as.Date("2017-12-01","%Y-%m-%d"),
+                        value=as.Date("2011-04-20"),
+                        timeFormat="%Y-%m-%d"),
+            
+            sliderInput("date_select_max",
+                        "Maximum Date:",
+                        min = as.Date("2011-04-20","%Y-%m-%d"),
+                        max = as.Date("2017-12-01","%Y-%m-%d"),
+                        value=as.Date("2017-12-01"),
+                        timeFormat="%Y-%m-%d")
             
         ),
         
     
-        tabPanel("Time Series Plot",
-                 fluidRow(
-                     column(12, verbatimTextOutput("info")),
-                     column(12, plotOutput('ts_plot', click = "plot_click" )),
-                     column(12, plotOutput('count_plot'))
+        tabsetPanel(type = "tabs",
+                    tabPanel("Time Series Plot",
+                             fluidRow(
+                                 column(12, verbatimTextOutput("info")),
+                                 column(12, plotOutput('ts_plot', click = "plot_click" )),
+                                 column(12, plotOutput('count_plot')))),
+                    tabPanel("Data Table",
+                             tableOutput("table"))
                      
                 
             )
@@ -137,8 +167,7 @@ ui <- fluidPage(
         )
         
     )
-        
-)
+    
        
 
 shinyApp(ui = ui, server = server)
