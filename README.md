@@ -4,11 +4,11 @@
 
 * The data for the Boston 311 Request dataset can be downloaded [here](https://data.cityofboston.gov/City-Services/311-Service-Requests/awu8-dc52). I've also included an .rds file in this repo which is the same data.
 
-The methodology of this project was straight forward. For a given neighborhood, what type of requests were made, and what were was the duration it took to close that request across the years of the collected data (2011-Present)?
+The methodology of this project was straight forward. For a given neighborhood, what type of requests were made, and what was the duration it took to close that request across the years of the collected data (2011-Present)?
 
 First, I subset the data such that I only looked at requests that have been closed. From there, I calculated the duration it took to close the request, in **hours**. Note that request times were aggregated by **week**. Information was plotted using ggplot2.
 
-In the RShiny app, you can select the neighborhood, and the department the request went to. You can also set a date range with the sliders, and the plots will automatically re-render with the appopriate range. The dashboard currently spit out a two plots, one that shows the mean request time over the years, along with the standard error of each request (in the light blue). The second plot visualizes the number of request made on a weekly basis.
+In the RShiny app, you can select the neighborhood, and the department the request went to. You can also set a date range with the sliders, and the plots will automatically re-render with the appopriate range. The dashboard currently spit out a two plots, one that shows the mean request time over the years, along with the standard error of each request (in the light blue). The second plot visualizes the number of requests made on a weekly basis.
 
 Finally, you can click on the first plot to get the values, which will be shown in the gray box above it.
 
