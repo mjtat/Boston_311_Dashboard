@@ -16,14 +16,14 @@ This app currently isn't hosted on ShinyApps.io (it seems to require more resour
 
 ##Screenshots 
 
-**The screenshot below shows the input widgets to select neighborhood and department, as well as slider inputs to set the date range. Plots are shown below for those parameters. You can click on the first plot to get the exact values.
+**The screenshot below shows the input widgets to select neighborhood and department, as well as slider inputs to set the date range. Plots are shown below for those parameters. You can click on the first plot to get the exact values.**
 
 ![alt text](https://raw.githubusercontent.com/mjtat/Boston_311_Dashboard/master/images/screen1.png "Screenshot 1")
 
-** The screenshot shows a different neighborhood and department, with a much smaller date range.
+** The screenshot shows a different neighborhood and department, with a much smaller date range.**
 
 ![alt text](https://raw.githubusercontent.com/mjtat/Boston_311_Dashboard/master/images/screen2.png "Screenshot 2")
 
-** Finally, you can click on the Table tab to view the actual data table that is visualized on the plots..
+**Finally, you can click on the Table tab to view the actual data table that is visualized on the plots.**
 
 ![alt text](https://raw.githubusercontent.com/mjtat/Boston_311_Dashboard/master/images/screen3.png "Screenshot 3")
