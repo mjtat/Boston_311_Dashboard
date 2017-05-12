@@ -2,7 +2,7 @@
 
 **This dashboard was a simple experiment of mine in RShiny to see if I could plot basic time series information interactively using RShiny.**
 
-* The data for the Boston 311 Request dataset can be downloaded [here](https://data.cityofboston.gov/City-Services/311-Service-Requests/awu8-dc52). 
+* The data for the Boston 311 Request dataset can be downloaded [here](https://data.cityofboston.gov/City-Services/311-Service-Requests/awu8-dc52). I've also included an .rds file in this repo which is the same data.
 
 The methodology of this project was straight forward. For a given neighborhood, what type of requests were made, and what were was the duration it took to close that request across the years of the collected data (2011-Present)?
 
