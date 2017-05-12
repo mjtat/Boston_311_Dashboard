@@ -20,7 +20,7 @@ This app currently isn't hosted on ShinyApps.io (it seems to require more resour
 
 ![alt text](https://raw.githubusercontent.com/mjtat/Boston_311_Dashboard/master/images/screen1.png "Screenshot 1")
 
-** The screenshot shows a different neighborhood and department, with a much smaller date range.**
+**The screenshot shows a different neighborhood and department, with a much smaller date range.**
 
 ![alt text](https://raw.githubusercontent.com/mjtat/Boston_311_Dashboard/master/images/screen2.png "Screenshot 2")
 
