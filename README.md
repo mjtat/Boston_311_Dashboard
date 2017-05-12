@@ -14,7 +14,7 @@ Finally, you can click on the first plot to get the values, which will be shown 
 
 This app currently isn't hosted on ShinyApps.io (it seems to require more resources than a free server has to offer), but you can host it locally by pulling this repo and running the app. Screen shots of this app are below.
 
-##Screenshots 
+## Screenshots 
 
 **The screenshot below shows the input widgets to select neighborhood and department, as well as slider inputs to set the date range. Plots are shown below for those parameters. You can click on the first plot to get the exact values.**
 
