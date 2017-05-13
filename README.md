@@ -8,11 +8,11 @@ The methodology of this project was straight forward. For a given neighborhood, 
 
 First, I subset the data such that I only looked at requests that have been closed. From there, I calculated the duration it took to close the request, in **hours**. Note that request times were aggregated by **week**. Information was plotted using ggplot2.
 
-In the RShiny app, you can select the neighborhood, and the department the request went to. You can also set a date range with the sliders, and the plots will automatically re-render with the appopriate range. The dashboard currently spit out a two plots, one that shows the mean request time over the years, along with the standard error of each request (in the light blue). The second plot visualizes the number of requests made on a weekly basis.
+In the RShiny app, you can select the neighborhood, and the department the request went to. You can also set a date range with the sliders, and the plots will automatically re-render with the appopriate range. The dashboard currently spit out a two plots, one that shows the mean request time over the years, along with the standard error of each request (in the light blue). The second plot visualizes the number of requestsmmit made on a weekly basis.
 
 Finally, you can click on the first plot to get the values, which will be shown in the gray box above it.
 
-This app currently isn't hosted on ShinyApps.io (it seems to require more resources than a free server has to offer), but you can host it locally by pulling this repo and running the app. Screen shots of this app are below.
+[You can see the app live on shinyapps.io by clicking here](https://michelletat.shinyapps.io/bos_311/) (but it's really slow so I suggest downloading it and running it locally) Screen shots of this app are below.
 
 ## Screenshots 
 
