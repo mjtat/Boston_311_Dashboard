@@ -1,10 +1,11 @@
 library(zoo)
 library(shiny)
-library(ggplot2)
 library(xts)
+library(plotly)
+library(forecast)
 
-city_data <- readRDS('/home/michelle/Documents/bos_311/data.rds')
-city_data$
+city_data <- readRDS('data.rds')
+
 
 neighborhood_list <- list('South Boston / South Boston Waterfront', 'Allston / Brighton', 'Dorchester',
                           'Downtown / Financial District', 'Back Bay', 'Greater Mattapan', 'Charlestown', 'Roxbury',
@@ -32,6 +33,7 @@ server <- function(input, output, session) {
         df$open_dt <- as.POSIXlt(df$open_dt)
         time_series <- xts(df$request_duration, df$open_dt)
         time_series <- apply.weekly(time_series, agg)
+        time_series <- time_series[!is.na(index(time_series))]
         return(time_series)
     }
     
@@ -62,43 +64,48 @@ server <- function(input, output, session) {
     
     
     ts_data <- reactive({
-        data$open
+        
         data <- selectDept(data, input$select_subject)
         data$open_dt <- as.POSIXlt(data$open_dt)
         means <- neighborhood_plot(data, input$neighborhood, mean)
+        roll_mean <- rollapply(means, 8, mean)
         se <- neighborhood_plot(data, input$neighborhood, function(x) sqrt(var(x)/length(x)))
+        count <- count <- neighborhood_plot(data, input$neighborhood, nrow)
         means <- fortify.zoo(means)
+        roll_mean <- fortify.zoo(roll_mean)
         se <- fortify.zoo(se)
+        count <- fortify.zoo(count)
         means$se <- se$se
-        means <- means[1:(nrow(means)-1),]
+        means$rolling_mean<-roll_mean$roll_mean
+        means$count <- count$count
         means$Index <- as.Date(means$Index, format = "%Y-%m-%d")
         means <- means[means$Index >= input$date_select_min & means$Index <= input$date_select_max,]
         return(means)
     })
     
-    count_data <- reactive({
+    output$ts_forecast <- renderPlot({
         data <- selectDept(data, input$select_subject)
-        data$open_dt <- as.POSIXlt(data$open_dt)
-        count <- neighborhood_plot(data, input$neighborhood, nrow)
-        count <- fortify.zoo(count)
-        count <- count[1:(nrow(count)-1),]
-        count$Index <- as.Date(count$Index, format = "%Y-%m-%d")
-        count <- count[count$Index >= input$date_select_min & count$Index <= input$date_select_max,]
-        return(count)
+        #data$open_dt <- as.Date(data$open_dt, format = "%Y-%m-%d")
+        data <- data[data$open_dt >= input$date_select_min,]
+        ts <- neighborhood_plot(data, input$neighborhood, mean)
+        fit <- auto.arima(ts, allowdrift = TRUE)
+        fcast <- forecast(fit, h=input$forecast_months)
+        plot <- plot(fcast)
+        return(plot)
     })
 
-    output$ts_plot <- renderPlot({
+    output$ts_plot <- renderPlotly({
         plot_dat <- ts_data()
-        plot <-ggplot(data = plot_dat, aes(x = Index)) + geom_line(aes(y = means), size = 1) + geom_ribbon(aes(ymin = means, ymax = (means+se) , alpha = .02), fill = "lightskyblue1") + scale_alpha(guide = 'none') + labs(x = 'Date' , y = "Mean Hours to Close 311 Request" ) + theme(axis.text.x = element_text(size = 14, angle = 90), axis.text.y = element_text(size = 16), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 19)) + scale_x_date(date_breaks = "4 week", date_labels = "%m-%d-%Y")
-        return(plot)
-    })
-    
-    output$count_plot <- renderPlot({
-        plot_dat <- count_data()
-        plot <-ggplot(data = plot_dat, aes(x = Index)) + geom_line(aes(y = count), size = 1) + labs(x = 'Date' , y = "Mean Count of 311 Requests Closed" ) + theme(axis.text.x = element_text(size = 14, angle = 90), axis.text.y = element_text(size = 16), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 19)) + scale_x_date(date_breaks = "4 week", date_labels = "%m-%d-%Y")
-        return(plot)
         
+        plot <- plot_ly(plot_dat, x = ~Index, y = ~means, type = 'scatter', mode = 'lines', name = 'Mean Request Close Time', line = list(color = c('royalblue2'), width = 3.5)) %>%
+                add_trace(y = ~rolling_mean, name = 'Rolling Mean', line = list(color = c('orange3'), width = 2, dash = 'dot')) %>%
+            add_trace(y = ~se+means, name = 'Standard Error of Weekly Request', line = list(color = c('lavender'), width = 2, dash = 'dash')) %>%
+            add_trace(y = ~count, name = 'Number of Mean Requests', line = list(color = c('gary'), width = 2, dash = 'dash')) %>%
+        layout(legend = list(x = 0.75, y = 0.95))
         
+       # plot <-ggplot(data = plot_dat, aes(x = Index)) + geom_line(aes(y = means), size = 1) + geom_ribbon(aes(ymin = means, ymax = (means+se) , alpha = .02), fill = "lightskyblue1") + scale_alpha(guide = 'none') + labs(x = 'Date' , y = "Mean Hours to Close 311 Request" ) + theme(axis.text.x = element_text(size = 14, angle = 90), axis.text.y = element_text(size = 16), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 19)) + scale_x_date(date_breaks = "4 week", date_labels = "%m-%d-%Y")
+        #plot <- ggplotly(plot)
+        return(plot)
     })
     
     output$info <- renderPrint({
@@ -147,17 +154,21 @@ ui <- fluidPage(
                         min = as.Date("2011-04-20","%Y-%m-%d"),
                         max = as.Date("2017-12-01","%Y-%m-%d"),
                         value=as.Date("2017-12-01"),
-                        timeFormat="%Y-%m-%d")
+                        timeFormat="%Y-%m-%d"),
             
+            sliderInput('forecast_months',
+                        "Weeks to Forecast:",
+                        min = 1,
+                        max = 52,
+                        value = 1)
         ),
         
-    
         tabsetPanel(type = "tabs",
                     tabPanel("Time Series Plot",
                              fluidRow(
-                                 column(12, verbatimTextOutput("info")),
-                                 column(12, plotOutput('ts_plot', click = "plot_click" )),
-                                 column(12, plotOutput('count_plot')))),
+                                 column(12, plotlyOutput('ts_plot')))),
+                    tabPanel('ARIMA Time Series Forcasting',
+                                fluidRow(12, plotOutput("ts_forecast"))),
                     tabPanel("Data Table",
                              tableOutput("table"))
                      
@@ -171,4 +182,3 @@ ui <- fluidPage(
        
 
 shinyApp(ui = ui, server = server)
-

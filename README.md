@@ -6,24 +6,12 @@
 
 The methodology of this project was straight forward. For a given neighborhood, what type of requests were made, and what was the duration it took to close that request across the years of the collected data (2011-Present)?
 
-First, I subset the data such that I only looked at requests that have been closed. From there, I calculated the duration it took to close the request, in **hours**. Note that request times were aggregated by **week**. Information was plotted using ggplot2.
+One thing I'm currently working on is incorporating time-series analyses with this data. Right now, a pretty crude implementation of ARIMA forecasting is used, but this will hopefully be improved upon in the future.
 
-In the RShiny app, you can select the neighborhood, and the department the request went to. You can also set a date range with the sliders, and the plots will automatically re-render with the appopriate range. The dashboard currently spit out a two plots, one that shows the mean request time over the years, along with the standard error of each request (in the light blue). The second plot visualizes the number of requests made on a weekly basis.
+First, I subset the data such that I only looked at requests that have been closed. From there, I calculated the duration it took to close the request, in **hours**. Note that request times were aggregated by **week**. 
 
-Finally, you can click on the first plot to get the values, which will be shown in the gray box above it.
+Line plots were rendered using `plotly`. Plotly is nice in that it allows you to directly interact with the line plot. You can click on the legend to add and hide lines, and you can hover over each line to get the date and values for that data point.
 
-[You can see the app live on shinyapps.io by clicking here](https://michelletat.shinyapps.io/bos_311/) (but it's really slow so I suggest downloading it and running it locally) Screen shots of this app are below.
+In the RShiny app, you can select the neighborhood, and the department the request went to. You can also set a date range with the sliders, and the plots will automatically re-render with the appopriate range. Four lines are shown: the mean request time, the rolling mean (which aggregates the prior 2 months / 8 weeks of data), the standard error of request times by week, and the count of requests by week.
 
-## Screenshots 
-
-**The screenshot below shows the input widgets to select neighborhood and department, as well as slider inputs to set the date range. Plots are shown below for those parameters. You can click on the first plot to get the exact values.**
-
-![alt text](https://raw.githubusercontent.com/mjtat/Boston_311_Dashboard/master/images/screen1.png "Screenshot 1")
-
-**The screenshot shows a different neighborhood and department, with a much smaller date range.**
-
-![alt text](https://raw.githubusercontent.com/mjtat/Boston_311_Dashboard/master/images/screen2.png "Screenshot 2")
-
-**Finally, you can click on the Table tab to view the actual data table that is visualized on the plots.**
-
-![alt text](https://raw.githubusercontent.com/mjtat/Boston_311_Dashboard/master/images/screen3.png "Screenshot 3")
+[You can see the app live on shinyapps.io by clicking here](https://michelletat.shinyapps.io/bos_311/) (but it's really slow so I suggest downloading it and running it locally).
