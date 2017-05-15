@@ -46,6 +46,25 @@ server <- function(input, output, session) {
         return(fcast)
     }
     
+    create_timeseries <- function(data) {
+        data <- selectDept(data, input$select_subject)
+        data$open_dt <- as.POSIXlt(data$open_dt)
+        means <- neighborhood_plot(data, input$neighborhood, mean)
+        roll_mean <- rollapply(means, 8, mean)
+        se <- neighborhood_plot(data, input$neighborhood, function(x) sqrt(var(x)/length(x)))
+        count <- neighborhood_plot(data, input$neighborhood, nrow)
+        means <- fortify.zoo(means)
+        roll_mean <- fortify.zoo(roll_mean)
+        se <- fortify.zoo(se)
+        count <- fortify.zoo(count)
+        means$se <- se$se
+        means$rolling_mean <- roll_mean$roll_mean
+        means$count <- count$count
+        means$Index <- as.Date(means$Index, format = "%Y-%m-%d")
+        means <- means[means$Index >= input$date_select_min & means$Index <= input$date_select_max,]
+        
+    }
+    
     #END FUNCTIONS
     
 ######################################################################    
@@ -73,22 +92,9 @@ server <- function(input, output, session) {
     
     
     ts_data <- reactive({
-        
         data <- selectDept(data, input$select_subject)
         data$open_dt <- as.POSIXlt(data$open_dt)
-        means <- neighborhood_plot(data, input$neighborhood, mean)
-        roll_mean <- rollapply(means, 8, mean)
-        se <- neighborhood_plot(data, input$neighborhood, function(x) sqrt(var(x)/length(x)))
-        count <-neighborhood_plot(data, input$neighborhood, nrow)
-        means <- fortify.zoo(means)
-        roll_mean <- fortify.zoo(roll_mean)
-        se <- fortify.zoo(se)
-        count <- fortify.zoo(count)
-        means$se <- se$se
-        means$rolling_mean<-roll_mean$roll_mean
-        means$count <- count$count
-        means$Index <- as.Date(means$Index, format = "%Y-%m-%d")
-        means <- means[means$Index >= input$date_select_min & means$Index <= input$date_select_max,]
+        means <- create_timeseries(data)
         return(means)
     })
     
@@ -111,17 +117,11 @@ server <- function(input, output, session) {
             add_trace(y = ~count, name = 'Number of Mean Requests', line = list(color = c('gary'), width = 2, dash = 'dash')) %>%
         layout(legend = list(x = 0.75, y = 0.95), xaxis = list(title = 'Open Request Date'), yaxis = list(title = "Mean Hours To Close Request / Number of Requests"))
         
-       # plot <-ggplot(data = plot_dat, aes(x = Index)) + geom_line(aes(y = means), size = 1) + geom_ribbon(aes(ymin = means, ymax = (means+se) , alpha = .02), fill = "lightskyblue1") + scale_alpha(guide = 'none') + labs(x = 'Date' , y = "Mean Hours to Close 311 Request" ) + theme(axis.text.x = element_text(size = 14, angle = 90), axis.text.y = element_text(size = 16), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 19)) + scale_x_date(date_breaks = "4 week", date_labels = "%m-%d-%Y")
-        #plot <- ggplotly(plot)
         return(plot)
     })
     
     output$info <- renderPrint({
         plot_dat <- ts_data()
-        # With ggplot2, no need to tell it what the x and y variables are.
-        # threshold: set max distance, in pixels
-        # maxpoints: maximum number of rows to return
-        # addDist: add column with distance, in pixels
         nearPoints(plot_dat, input$plot_click, threshold = 15, maxpoints = 1)
     })
     
@@ -154,14 +154,14 @@ ui <-fluidPage(
             sliderInput("date_select_min",
                         "Minimum Date:",
                         min = as.Date("2011-04-20","%Y-%m-%d"),
-                        max = as.Date("2017-12-01","%Y-%m-%d"),
+                        max = as.Date("2017-04-19","%Y-%m-%d"),
                         value=as.Date("2011-04-20"),
                         timeFormat="%Y-%m-%d"),
             
             sliderInput("date_select_max",
                         "Maximum Date:",
                         min = as.Date("2011-04-20","%Y-%m-%d"),
-                        max = as.Date("2017-12-01","%Y-%m-%d"),
+                        max = as.Date("2017-04-19","%Y-%m-%d"),
                         value=as.Date("2017-12-01"),
                         timeFormat="%Y-%m-%d"),
             
