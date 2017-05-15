@@ -3,21 +3,21 @@ library(shiny)
 library(xts)
 library(plotly)
 library(forecast)
+library(shinydashboard)
 
 city_data <- readRDS('data.rds')
 
 
-neighborhood_list <- list('South Boston / South Boston Waterfront', 'Allston / Brighton', 'Dorchester',
-                          'Downtown / Financial District', 'Back Bay', 'Greater Mattapan', 'Charlestown', 'Roxbury',
-                          'Jamaica Plain', 'Boston', 'Roslindale', 'East Boston', 'South End', 'Hyde Park', 'Beacon Hill',
-                          'West Roxbury', 'Mission Hill', 'South Boston', 'Brighton', 'Fenway / Kenmore / Audubon Circle / Longwood',
-                          'Mattapan', 'Allston', 'Chestnut Hill')
+
+neighborhood_list <-list('Allston / Brighton', 'Allston', 'Back Bay',  'Beacon Hill', 'Boston', 'Brighton', 'Charlestown', 'Chestnut Hill', 'Dorchester', 'Downtown / Financial District', 'East Boston', 'Fenway / Kenmore / Audubon Circle / Longwood', 'Greater Mattapan',  'Hyde Park', 'Jamaica Plain', 'Mattapan', 'Mission Hill','Roslindale', 'Roxbury', 'South Boston', 'South Boston / South Boston Waterfront',  'South End','West Roxbury' )
 
 server <- function(input, output, session) {
-    
+
     data <- city_data
     
-    #Functions used later on the server end
+    #############
+    # FUNCTIONS #
+    #############
     
     selectNeighborhood <- function(df, neighborhood) {
         df = df[df$neighborhood == neighborhood,]
@@ -35,6 +35,15 @@ server <- function(input, output, session) {
         time_series <- apply.weekly(time_series, agg)
         time_series <- time_series[!is.na(index(time_series))]
         return(time_series)
+    }
+
+    create_forecast <- function(ts, forecastInt) {
+        attr(ts, 'frequency') <- 7
+        ts <- decompose(as.ts(ts))
+        ts <- seasadj(ts)
+        fit <- auto.arima(ts, allowdrift = TRUE)
+        fcast <- forecast(fit, h=forecastInt)
+        return(fcast)
     }
     
     #END FUNCTIONS
@@ -70,7 +79,7 @@ server <- function(input, output, session) {
         means <- neighborhood_plot(data, input$neighborhood, mean)
         roll_mean <- rollapply(means, 8, mean)
         se <- neighborhood_plot(data, input$neighborhood, function(x) sqrt(var(x)/length(x)))
-        count <- count <- neighborhood_plot(data, input$neighborhood, nrow)
+        count <-neighborhood_plot(data, input$neighborhood, nrow)
         means <- fortify.zoo(means)
         roll_mean <- fortify.zoo(roll_mean)
         se <- fortify.zoo(se)
@@ -83,14 +92,13 @@ server <- function(input, output, session) {
         return(means)
     })
     
-    output$ts_forecast <- renderPlot({
+    output$ts_forecast <- renderPlotly({
         data <- selectDept(data, input$select_subject)
-        #data$open_dt <- as.Date(data$open_dt, format = "%Y-%m-%d")
-        data <- data[data$open_dt >= input$date_select_min,]
+        data$open_dt <- as.Date(data$open_dt, format = "%Y-%m-%d")
         ts <- neighborhood_plot(data, input$neighborhood, mean)
-        fit <- auto.arima(ts, allowdrift = TRUE)
-        fcast <- forecast(fit, h=input$forecast_months)
-        plot <- plot(fcast)
+        fcast <- create_forecast(ts, input$forecast_months)
+        plot <- autoplot(fcast)+ theme(panel.background=element_rect(fill="gray96")) +ylab(label = "Mean Weekly Hours") + xlab (label = "Week #")
+        plot <- ggplotly(plot)
         return(plot)
     })
 
@@ -101,7 +109,7 @@ server <- function(input, output, session) {
                 add_trace(y = ~rolling_mean, name = 'Rolling Mean', line = list(color = c('orange3'), width = 2, dash = 'dot')) %>%
             add_trace(y = ~se+means, name = 'Standard Error of Weekly Request', line = list(color = c('lavender'), width = 2, dash = 'dash')) %>%
             add_trace(y = ~count, name = 'Number of Mean Requests', line = list(color = c('gary'), width = 2, dash = 'dash')) %>%
-        layout(legend = list(x = 0.75, y = 0.95))
+        layout(legend = list(x = 0.75, y = 0.95), xaxis = list(title = 'Open Request Date'), yaxis = list(title = "Mean Hours To Close Request / Number of Requests"))
         
        # plot <-ggplot(data = plot_dat, aes(x = Index)) + geom_line(aes(y = means), size = 1) + geom_ribbon(aes(ymin = means, ymax = (means+se) , alpha = .02), fill = "lightskyblue1") + scale_alpha(guide = 'none') + labs(x = 'Date' , y = "Mean Hours to Close 311 Request" ) + theme(axis.text.x = element_text(size = 14, angle = 90), axis.text.y = element_text(size = 16), axis.title.x = element_text(size = 20), axis.title.y = element_text(size = 19)) + scale_x_date(date_breaks = "4 week", date_labels = "%m-%d-%Y")
         #plot <- ggplotly(plot)
@@ -127,10 +135,11 @@ server <- function(input, output, session) {
   
 }
 
-ui <- fluidPage(
-    
-    titlePanel("Boston 311 Request Times"),
-    
+ui <-fluidPage(
+    dashboardHeader(
+        title=strong("Boston 311 Request Times", style="font-family: 'Arial'; font-size: 30px;", img(src='phone.png',height=40)), #add title with a map icon
+        titleWidth = 330),
+
     sidebarLayout(
         
         sidebarPanel(
@@ -160,15 +169,16 @@ ui <- fluidPage(
                         "Weeks to Forecast:",
                         min = 1,
                         max = 52,
-                        value = 1)
+                        value = 20)
         ),
         
         tabsetPanel(type = "tabs",
                     tabPanel("Time Series Plot",
                              fluidRow(
+                                 (column(12, h4("Click on the legend to hide/add lines. Hover over the lines to view the actual data points."))),
                                  column(12, plotlyOutput('ts_plot')))),
-                    tabPanel('ARIMA Time Series Forcasting',
-                                fluidRow(12, plotOutput("ts_forecast"))),
+                    tabPanel('ARIMA Time Series Forecasting',
+                                fluidRow(12, plotlyOutput("ts_forecast"))),
                     tabPanel("Data Table",
                              tableOutput("table"))
                      
