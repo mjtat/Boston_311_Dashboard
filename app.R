@@ -19,15 +19,18 @@ server <- function(input, output, session) {
     # FUNCTIONS #
     #############
     
+    # This function subsets the original data by a particular neighborhood.
     selectNeighborhood <- function(df, neighborhood) {
-        df = df[df$neighborhood == neighborhood,]
+        df <- df[df$neighborhood == neighborhood,]
     }
     
+    # This function subsets the data by department (subject) name. 
     selectDept <- function(df, dept_name) {
         data <- df[df$SUBJECT == dept_name,]
         return(data)
     }
     
+    # The neighborhood_plot() function formats the data into a time_series format.
     neighborhood_plot <- function(df, neighborhood, agg) {
         df <- df[df$neighborhood == neighborhood, ]
         df$open_dt <- as.POSIXlt(df$open_dt)
@@ -36,7 +39,9 @@ server <- function(input, output, session) {
         time_series <- time_series[!is.na(index(time_series))]
         return(time_series)
     }
-
+    
+    # The create_forecast function takes a ts object, and models the time series
+    # using ARIMA.
     create_forecast <- function(ts, forecastInt) {
         attr(ts, 'frequency') <- 7
         ts <- decompose(as.ts(ts))
@@ -46,6 +51,7 @@ server <- function(input, output, session) {
         return(fcast)
     }
     
+    # This large function creates the objects necessary to plot the time series.
     create_timeseries <- function(data) {
         data <- selectDept(data, input$select_subject)
         data$open_dt <- as.POSIXlt(data$open_dt)
@@ -67,16 +73,16 @@ server <- function(input, output, session) {
     
     #END FUNCTIONS
     
-######################################################################    
-    
-    #Reactive Code that will change UI based on user input.
-    
+    #######################
+    # REACTIVE SHINY CODE #
+    #######################
     
     neighborhood_dat <- reactive({
         data <- city_data
         data <- selectNeighborhood(data, input$neighborhood)
         
     })
+    
     
     subject_data <- reactive({
         data <- neighborhood_dat()
@@ -85,12 +91,14 @@ server <- function(input, output, session) {
         return(data)
     })
     
+    # Updates the department listing for each neighborhood, since
+    # not all neighborhoods have the same type of requests.
     observe({
         updateSelectInput(session, "select_subject",
                           choices = subject_data())
     })
     
-    
+    # Creates plotting objects that will be rendered for the main time series plot.
     ts_data <- reactive({
         data <- selectDept(data, input$select_subject)
         data$open_dt <- as.POSIXlt(data$open_dt)
@@ -98,6 +106,7 @@ server <- function(input, output, session) {
         return(means)
     })
     
+    # Returns a forecasting object to be rendered.
     output$ts_forecast <- renderPlotly({
         data <- selectDept(data, input$select_subject)
         data$open_dt <- as.Date(data$open_dt, format = "%Y-%m-%d")
@@ -108,6 +117,7 @@ server <- function(input, output, session) {
         return(plot)
     })
 
+    # Returns a time_series object to be rendered.
     output$ts_plot <- renderPlotly({
         plot_dat <- ts_data()
         
@@ -120,11 +130,7 @@ server <- function(input, output, session) {
         return(plot)
     })
     
-    output$info <- renderPrint({
-        plot_dat <- ts_data()
-        nearPoints(plot_dat, input$plot_click, threshold = 15, maxpoints = 1)
-    })
-    
+    # Renders a data table object
     output$table <- renderTable({
         data <- ts_data()
         data$Index <- as.Date(data$Index, format = "%Y-%m-%d")
